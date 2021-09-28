@@ -1,0 +1,11 @@
+[validation]
+    access_token = "fc45196ded4b494598e057b4f0214c06"
+    app_id = "d8bbcefed28b48dea77c0ff3473ff9c8"
+    open_id = "4V25G5RXFAv7fth34sJ7WSltFLJp3QjFtC7Gz-1d1PRMwaqhhvelRlgyQ3Ont7Ww2gEgepysyJ5LgJxd6fGXdUGTRsn7yVE07hNckF2gTH8Ce-T3kHOR_7oL9ypAaLi0IE5HAJy0RtaWVylhktaMvg"
+    platform = "d8bbcefed28b48dea77c0ff3473ff9c8;8.9.1.0;FA12EC03-9B87-4B7F-8DE5-78E9CC6647A0;iphone;noone;ios"
+    user_id = "121146434"
+[file]
+#     dir_ids = "220d00d8ccc145f584a782c2b5ee6be7"
+    dir_ids = "ef4413c0e5e34d42bfe38750cd735792"
+    size = 6624000 # 最小下载文件
+    remote_path = "/root/googleDrive/"
