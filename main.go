@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	nested "github.com/antonfisher/nested-logrus-formatter"
-	"github.com/maoring/Btqupg/got"
 	"github.com/shiena/ansicolor"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -15,17 +14,16 @@ import (
 	"sync"
 )
 
-
 var (
 	paramsMap  = make(map[string]string)
 	headersMap = map[string]string{
 		"User-Agent":   "CloudApp/8.9.1 (com.bitqiu.pan; build:99; iOS 14.7.0) Alamofire/4.7.0",
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
-	apiHome = "https://pan-api.bitqiu.com"
-	size = 0
+	apiHome    = "https://pan-api.bitqiu.com"
+	size       = 0
 	remotePath = ""
-	wg sync.WaitGroup
+	wg         sync.WaitGroup
 )
 
 type Resp struct {
@@ -40,8 +38,8 @@ type RespData struct {
 }
 
 type RespDownloadData struct {
-	CurrentPage int        `json:"currentPage"`
-	PageSize    int        `json:"pageSize"`
+	CurrentPage int      `json:"currentPage"`
+	PageSize    int      `json:"pageSize"`
 	Data        Resource `json:"data"`
 }
 
@@ -57,11 +55,11 @@ type Resource struct {
 	CreateTime      string `json:"createTime"`
 	SnapTime        string `json:"snapTime"`
 	ViewTime        string `json:"viewTime"`
-	Url				string `json:"url"`
+	Url             string `json:"url"`
 	ViewOffsetMills string `json:"viewOffsetMills"`
 	ResourceUid     string `json:"resourceUid"`
 	Type            string `json:"type"`
-	ExtName			string `json:"extName"`
+	ExtName         string `json:"extName"`
 }
 
 func init() {
@@ -103,8 +101,8 @@ Usage: tiler [-h] [-c filename]
 }
 
 // 获取目录下的文件ids 最大二级
-func getDirFileIds() map[string] Resource{
-	fileIds := make(map[string] Resource)
+func getDirFileIds() map[string]Resource {
+	fileIds := make(map[string]Resource)
 	paramsMap["parent_id"] = viper.GetString("file.dir_ids")
 	paramsMap["desc"] = "1"
 	paramsMap["limit"] = "1000"
@@ -127,7 +125,7 @@ func getDirFileIds() map[string] Resource{
 
 	}
 	for _, val := range _resp.Data.Data {
-		if val.ExtName!=""&&val.Size>=size {
+		if val.ExtName != "" && val.Size >= size {
 			fileIds[val.ResourceId] = val
 		} else {
 			// 进入下一级再获取文件资源id
@@ -143,7 +141,7 @@ func getDirFileIds() map[string] Resource{
 			var _resp Resp
 			err = json.Unmarshal(content, &_resp)
 			for _, _val := range _resp.Data.Data {
-				if _val.ExtName!=""&&_val.Size>=size {
+				if _val.ExtName != "" && _val.Size >= size {
 					fileIds[_val.ResourceId] = _val
 				}
 			}
@@ -153,43 +151,39 @@ func getDirFileIds() map[string] Resource{
 }
 
 // 批量获取下载地址
-func getDownloadLink(fileIds map[string] Resource) map[string]string {
+func getDownloadLink(fileIds map[string]Resource) map[string]string {
 	var rIds = make(map[string]string)
 	url := apiHome + "/fs/download/file/url"
-	for k,_ := range fileIds{
+	for k, _ := range fileIds {
 		paramsMap["file_ids"] = k
-		resp, _ := HttpPost(url,paramsMap,nil,headersMap)
+		resp, _ := HttpPost(url, paramsMap, nil, headersMap)
 		content, err := ioutil.ReadAll(resp.Body)
-		if err!=nil {
+		if err != nil {
 			panic(err)
 		}
 		var _resp RespDownloadData
 		err = json.Unmarshal(content, &_resp)
-		rIds[_resp.Data.Url] = "./download/"+fileIds[k].Name+"."+fileIds[k].ExtName
+		rIds[_resp.Data.Url] = "./download/" + fileIds[k].Name
 	}
 	return rIds
 }
 
 func main() {
-	fileIds:= getDirFileIds()
+	fileIds := getDirFileIds()
 	//fmt.Printf("%s",fileIds)
 	//file := [] string{"49ccb4b46bb3458bbb938d51971292f0"}
-	rIds:=	getDownloadLink(fileIds)
-	for url,path :=range rIds{
-		sp:=strings.Split(path,"/")
+	rIds := getDownloadLink(fileIds)
+	for url, path := range rIds {
+		sp := strings.Split(path, "/")
 		fileName := sp[len(sp)-1]
-		if Exists(remotePath+fileName) {
-			log.Printf("文件已存在 PATH:%s",remotePath+fileName)
+		if Exists(remotePath + fileName) {
+			log.Printf("文件已存在 PATH:%s", remotePath+fileName)
 			continue
 		}
 		wg.Add(1)
-		g := got.New()
-		err := g.Download(url, path)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("移动 源：%s -> %s",path,remotePath+fileName)
-		err=MoveFile(path,remotePath+fileName)
+		downloadFile(url, path, &wg, headersMap)
+		fmt.Printf("移动 源：%s -> %s", path, remotePath+fileName)
+		err := MoveFile(path, remotePath+fileName)
 		if err != nil {
 			panic(err)
 		}

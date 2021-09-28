@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -32,10 +33,12 @@ var DefaultClient = &http.Client{
 		Proxy:               http.ProxyFromEnvironment,
 	},
 }
+var downloadWg *sync.WaitGroup
 
 // Download creates *Download item and runs it.
-func (g Got) Download(URL, dest string) error {
-
+func (g Got) Download(URL, dest string, wg *sync.WaitGroup) error {
+	downloadWg = wg
+	defer downloadWg.Done()
 	return g.Do(&Download{
 		ctx:    g.ctx,
 		URL:    URL,
@@ -82,7 +85,7 @@ func NewRequest(ctx context.Context, method, URL string, header []GotHeader) (re
 		return
 	}
 	req.Header.Add("User-Agent", UserAgent)
-	req.Header.Add("Content-Type",ContentType)
+	req.Header.Add("Content-Type", ContentType)
 	for _, h := range header {
 		req.Header.Set(h.Key, h.Value)
 	}
